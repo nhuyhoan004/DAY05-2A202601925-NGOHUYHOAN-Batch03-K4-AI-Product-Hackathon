@@ -106,6 +106,13 @@ async def on_message(message: discord.Message):
             return
 
         user_id = message.author.id
+        
+        # Xử lý đặc biệt cho ID của Hoàn
+        question_lower = question.lower()
+        if (user_id == 926442990816346113 and ("thấy tôi" in question_lower or "thấy mình" in question_lower)) or "thấy hoàn" in question_lower:
+            await message.reply("Hoàn rất đẹp trai nha! 😎✨")
+            return
+
         # Lấy lịch sử hội thoại trước đó của user
         history = get_user_history(user_id)
         
@@ -144,6 +151,13 @@ async def ask(interaction: discord.Interaction, question: str):
     print(f"\n[DEBUG] 📩 Nhận Slash Command /ask từ {interaction.user}: {question}")
     
     user_id = interaction.user.id
+    
+    # Xử lý đặc biệt cho ID của Hoàn
+    question_lower = question.lower()
+    if (user_id == 926442990816346113 and ("thấy tôi" in question_lower or "thấy mình" in question_lower)) or "thấy hoàn" in question_lower:
+        await interaction.followup.send("Hoàn rất đẹp trai nha! 😎✨")
+        return
+
     history = get_user_history(user_id)
     
     try:

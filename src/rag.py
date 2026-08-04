@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict
-from src import retrieval, llm
+from src import retrieval, llm, schedule
 
 def get_answer(question: str, conversation_history: List[Dict] = None) -> str:
     """
@@ -11,6 +11,12 @@ def get_answer(question: str, conversation_history: List[Dict] = None) -> str:
     """
     if conversation_history is None:
         conversation_history = []
+
+    # Lịch sinh hoạt cố định là thông tin vận hành đã được xác nhận. Ưu tiên
+    # trả lời trực tiếp để không phụ thuộc vào độ liên quan của FAISS/LLM.
+    schedule_answer = schedule.get_schedule_answer(question)
+    if schedule_answer:
+        return schedule_answer
         
     retrieved_docs = retrieval.search(question)
     print(f"[DEBUG] 🔎 Đã tìm thấy {len(retrieved_docs)} tài liệu liên quan từ FAISS.")
