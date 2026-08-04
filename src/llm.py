@@ -3,29 +3,44 @@ import openai
 from src import config
 from src.prompts import SYSTEM_PROMPT, RAG_PROMPT_TEMPLATE
 
-from sentence_transformers import SentenceTransformer
-
 # Khởi tạo client OpenAI cho phần Text Generation
 client = openai.OpenAI(
     api_key=config.OPENAI_API_KEY,
     base_url=config.OPENAI_BASE_URL if config.OPENAI_BASE_URL else None
 )
 
-# Khởi tạo mô hình embedding cục bộ
-print(f"Đang tải mô hình embedding: {config.EMBEDDING_MODEL}...")
-embedding_model = SentenceTransformer(config.EMBEDDING_MODEL)
+# Client riêng cho OpenRouter Embeddings API. Không tải model vào RAM.
+embedding_client = openai.OpenAI(
+    api_key=config.OPENROUTER_API_KEY,
+    base_url=config.EMBEDDING_BASE_URL,
+)
+
+
+def generate_embeddings(texts: List[str]) -> List[List[float]]:
+    """Tạo embeddings cho một batch văn bản qua OpenRouter."""
+    if not config.OPENROUTER_API_KEY:
+        raise RuntimeError(
+            "Chưa thiết lập OPENROUTER_API_KEY (hoặc OPENAI_API_KEY tương thích)."
+        )
+
+    cleaned_texts = [text.replace("\n", " ") for text in texts]
+    if not cleaned_texts:
+        return []
+
+    response = embedding_client.embeddings.create(
+        model=config.EMBEDDING_MODEL,
+        input=cleaned_texts,
+        dimensions=config.EMBEDDING_DIMENSIONS,
+        encoding_format="float",
+    )
+    ordered = sorted(response.data, key=lambda item: item.index)
+    return [item.embedding for item in ordered]
 
 def generate_embedding(text: str) -> List[float]:
     """
-    Tạo một vector nhúng (embedding vector) cho văn bản truyền vào sử dụng SentenceTransformer.
+    Tạo một vector nhúng cho văn bản qua OpenRouter Embeddings API.
     """
-    # Thay thế các ký tự xuống dòng để tối ưu hiệu suất mô hình
-    text = text.replace("\n", " ")
-    
-    # Mã hóa văn bản thành vector
-    # normalize_embeddings=True rất quan trọng đối với cosine similarity / L2
-    embedding = embedding_model.encode(text, normalize_embeddings=True)
-    return embedding.tolist()
+    return generate_embeddings([text])[0]
 
 def generate_answer(question: str, context_chunks: List[str], conversation_history: List[dict] = None) -> str:
     """

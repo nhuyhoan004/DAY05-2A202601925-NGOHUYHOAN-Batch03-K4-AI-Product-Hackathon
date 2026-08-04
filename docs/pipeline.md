@@ -139,7 +139,7 @@ flowchart TB
 
 ### Bước 2.3 — Tạo Vector Embedding
 **File:** `src/llm.py` → hàm `generate_embedding()`
-- Sử dụng model **`intfloat/multilingual-e5-large`** chạy cục bộ (local) qua thư viện SentenceTransformer
+- Sử dụng model **`openai/text-embedding-3-small`** qua OpenRouter Embeddings API
 - Mỗi đoạn văn bản được chuyển thành 1 vector số (danh sách các số thập phân)
 - Hệ thống có **cache thông minh**: nếu đoạn text đã từng được embedding trước đó → lấy từ cache, không cần gọi model lại
 
@@ -284,7 +284,7 @@ Bot được hướng dẫn qua System Prompt với các quy tắc:
 | Thành phần | Công nghệ | Vai trò |
 |------------|-----------|---------|
 | Bot Framework | discord.py | Kết nối và tương tác với Discord |
-| Embedding Model | intfloat/multilingual-e5-large | Chuyển văn bản thành vector (chạy local) |
+| Embedding Model | openai/text-embedding-3-small | Chuyển văn bản thành vector qua OpenRouter API |
 | Vector Database | FAISS (Facebook) | Lưu trữ và tìm kiếm vector nhanh |
 | LLM | OpenAI / OpenRouter API | Sinh câu trả lời thông minh |
 | Config | python-dotenv | Quản lý biến môi trường |

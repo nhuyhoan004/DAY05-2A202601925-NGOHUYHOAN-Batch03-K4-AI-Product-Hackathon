@@ -5,15 +5,15 @@ Bot này là **background worker**. Không deploy như web service vì bot khôn
 ## Chuẩn bị
 
 1. Trong Discord Developer Portal, bật **Message Content Intent** và **Server Members Intent** cho bot.
-2. Bảo đảm `data/discord/faiss.index` và `data/discord/metadata.json` có trong image deploy. Nếu thay đổi model embedding hoặc dữ liệu, chạy `python scripts/build_index.py` trước khi deploy.
-3. Dùng model `intfloat/multilingual-e5-large`: index hiện có 1024 dimensions và phải khớp model này.
+2. Bảo đảm `data/discord/faiss.index` và `data/discord/metadata.json` có trong image deploy. Nếu thay đổi model embedding, số chiều hoặc dữ liệu, chạy `python scripts/build_index.py` trước khi deploy.
+3. Index hiện dùng OpenRouter model `openai/text-embedding-3-small` với 1024 dimensions.
 
 ## Render
 
 1. Push repository lên private Git repository và tạo **Background Worker** mới trên Render.
 2. Chọn file `render.yaml` khi tạo Blueprint (hoặc để Render tự nhận diện file này).
-3. Nhập secret trong Render dashboard: `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `OPENAI_API_KEY`.
-4. Deploy. Lần khởi động đầu có thể lâu hơn vì SentenceTransformer tải model embedding.
+3. Nhập secret trong Render dashboard: `DISCORD_TOKEN`, `DISCORD_GUILD_ID`, `OPENROUTER_API_KEY` (có thể dùng `OPENAI_API_KEY` cho cấu hình tương thích cũ).
+4. Deploy. Worker gọi OpenRouter cho cả chat và embedding, không tải model embedding local.
 
 ## Railway
 

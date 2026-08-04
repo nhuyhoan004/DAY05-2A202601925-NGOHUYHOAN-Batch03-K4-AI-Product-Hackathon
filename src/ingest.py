@@ -1,7 +1,7 @@
 import os
 import hashlib
 import json
-from src import utils, llm
+from src import utils, llm, config
 from src.vector_db import VectorDB
 
 def run_ingestion():
@@ -18,7 +18,11 @@ def run_ingestion():
     hash_path = "data/discord/documents.json.md5"
     try:
         with open(docs_path, 'rb') as f:
-            file_hash = hashlib.md5(f.read()).hexdigest()
+            source_bytes = f.read()
+        index_signature = (
+            f"{config.EMBEDDING_MODEL}:{config.EMBEDDING_DIMENSIONS}:"
+        ).encode("utf-8")
+        file_hash = hashlib.md5(index_signature + source_bytes).hexdigest()
             
         if os.path.exists(hash_path) and os.path.exists("data/discord/faiss.index"):
             with open(hash_path, 'r') as f:
@@ -59,25 +63,44 @@ def run_ingestion():
         except Exception as e:
             print(f"Không thể tải cache cũ: {e}")
 
-    embeddings = []
-    new_chunks_count = 0
+    embeddings = [None] * len(all_chunks)
+    missing = []
     for i, chunk in enumerate(all_chunks):
-        try:
-            # Dùng mã hash của text để làm key cho cache
-            chunk_hash = hashlib.md5(chunk.encode('utf-8')).hexdigest()
-            if chunk_hash in embedding_cache:
-                emb = embedding_cache[chunk_hash]
-            else:
-                emb = llm.generate_embedding(chunk)
-                embedding_cache[chunk_hash] = emb
-                new_chunks_count += 1
-                
-            embeddings.append(emb)
-            if (i + 1) % 50 == 0:
-                print(f"Đã xử lý {i + 1}/{len(all_chunks)} chunks...")
-        except Exception as e:
-            print(f"Lỗi khi tạo embedding cho một chunk: {e}")
-            raise e
+        cache_key = hashlib.md5(
+            (
+                f"{config.EMBEDDING_MODEL}:{config.EMBEDDING_DIMENSIONS}:" + chunk
+            ).encode("utf-8")
+        ).hexdigest()
+        cached = embedding_cache.get(cache_key)
+        if cached and len(cached) == config.EMBEDDING_DIMENSIONS:
+            embeddings[i] = cached
+        else:
+            missing.append((i, chunk, cache_key))
+
+    batch_size = max(1, config.EMBEDDING_BATCH_SIZE)
+    try:
+        for start in range(0, len(missing), batch_size):
+            batch = missing[start:start + batch_size]
+            batch_vectors = llm.generate_embeddings([item[1] for item in batch])
+            if len(batch_vectors) != len(batch):
+                raise RuntimeError("OpenRouter trả về sai số lượng embedding.")
+            for (index, _chunk, cache_key), vector in zip(batch, batch_vectors):
+                if len(vector) != config.EMBEDDING_DIMENSIONS:
+                    raise RuntimeError(
+                        f"Embedding có {len(vector)} chiều, kỳ vọng "
+                        f"{config.EMBEDDING_DIMENSIONS}."
+                    )
+                embeddings[index] = vector
+                embedding_cache[cache_key] = vector
+            print(
+                f"Đã tạo embedding API {min(start + len(batch), len(missing))}/"
+                f"{len(missing)} chunks mới..."
+            )
+    except Exception as e:
+        print(f"Lỗi khi gọi OpenRouter Embeddings API: {e}")
+        raise
+
+    new_chunks_count = len(missing)
             
     if new_chunks_count > 0:
         print(f"Đã tạo embedding mới cho {new_chunks_count} chunks. Lưu lại cache...")

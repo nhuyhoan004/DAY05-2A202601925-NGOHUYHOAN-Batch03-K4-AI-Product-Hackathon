@@ -11,8 +11,25 @@ DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-# SentenceTransformer tải embedding model cục bộ; index hiện tại dùng vector 1024 chiều.
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "intfloat/multilingual-e5-large")
+
+# Embedding được gọi qua API OpenRouter để worker không tải model vào RAM.
+# OPENROUTER_API_KEY được ưu tiên; OPENAI_API_KEY vẫn tương thích cấu hình cũ.
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY") or OPENAI_API_KEY
+EMBEDDING_BASE_URL = os.getenv(
+    "EMBEDDING_BASE_URL", "https://openrouter.ai/api/v1"
+)
+EMBEDDING_MODEL = os.getenv(
+    "EMBEDDING_MODEL", "openai/text-embedding-3-small"
+)
+try:
+    EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))
+except ValueError:
+    EMBEDDING_DIMENSIONS = 1024
+
+try:
+    EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "32"))
+except ValueError:
+    EMBEDDING_BATCH_SIZE = 32
 
 # Cấu hình RAG
 try:

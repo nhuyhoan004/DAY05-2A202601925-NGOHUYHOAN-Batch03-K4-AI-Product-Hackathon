@@ -11,11 +11,15 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: OPENAI_BASE_URL
         value: https://openrouter.ai/api/v1
       - key: OPENAI_MODEL
         value: openai/gpt-4o-mini
       - key: EMBEDDING_MODEL
-        value: intfloat/multilingual-e5-large
+        value: openai/text-embedding-3-small
+      - key: EMBEDDING_DIMENSIONS
+        value: "1024"
       - key: TOP_K
         value: "5"
