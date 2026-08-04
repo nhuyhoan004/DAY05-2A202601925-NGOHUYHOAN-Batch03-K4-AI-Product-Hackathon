@@ -1,0 +1,21 @@
+# fly.toml app configuration file generated for day05-2a202601925-ngohuyhoan-batch03-k4-ai-product-hackathon on 2026-08-04T03:45:53Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "day05-2a202601925-ngohuyhoan-batch03-k4-ai-product-hackathon"
+primary_region = "sin"
+swap_size_mb = 512
+
+[http_service]
+  auto_start_machines = true
+  auto_stop_machines = true
+  force_https = true
+  internal_port = 8080
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1gb"
