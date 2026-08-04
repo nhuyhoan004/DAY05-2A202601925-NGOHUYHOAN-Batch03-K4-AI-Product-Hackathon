@@ -11,7 +11,8 @@ DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+# SentenceTransformer tải embedding model cục bộ; index hiện tại dùng vector 1024 chiều.
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "intfloat/multilingual-e5-large")
 
 # Cấu hình RAG
 try:
