@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import time
+import unicodedata
 from discord.ext import commands, tasks
 from discord import app_commands
 from src import config, rag, collector, ingest
@@ -36,6 +37,26 @@ def save_to_history(user_id: int, role: str, content: str):
     # Giữ tối đa HISTORY_MAX_MESSAGES tin nhắn gần nhất
     if len(entry["messages"]) > HISTORY_MAX_MESSAGES:
         entry["messages"] = entry["messages"][-HISTORY_MAX_MESSAGES:]
+
+
+def normalize_text(text: str) -> str:
+    """Chuẩn hoá tiếng Việt để nhận diện các câu hỏi giao tiếp ngắn."""
+    return "".join(
+        char for char in unicodedata.normalize("NFD", text.lower())
+        if unicodedata.category(char) != "Mn"
+    ).replace("đ", "d")
+
+
+def get_contextual_reply(question: str, display_name: str) -> str | None:
+    """Trả lời các câu đùa dựa trên ngữ cảnh của người đang gửi tin nhắn."""
+    normalized_question = normalize_text(question)
+    asks_who = "ai" in normalized_question
+    mentions_handsome = "dep trai" in normalized_question
+    mentions_server = "server" in normalized_question or "sever" in normalized_question
+
+    if asks_who and mentions_handsome and mentions_server:
+        return f"{display_name} đẹp trai nhất server nha! 😎✨"
+    return None
 
 class MyBot(commands.Bot):
     def __init__(self):
@@ -106,6 +127,10 @@ async def on_message(message: discord.Message):
             return
 
         user_id = message.author.id
+        contextual_reply = get_contextual_reply(question, message.author.display_name)
+        if contextual_reply:
+            await message.reply(contextual_reply)
+            return
         
         # Lấy lịch sử hội thoại trước đó của user
         history = get_user_history(user_id)
@@ -145,7 +170,11 @@ async def ask(interaction: discord.Interaction, question: str):
     print(f"\n[DEBUG] 📩 Nhận Slash Command /ask từ {interaction.user}: {question}")
     
     user_id = interaction.user.id
-    
+    contextual_reply = get_contextual_reply(question, interaction.user.display_name)
+    if contextual_reply:
+        await interaction.followup.send(contextual_reply)
+        return
+
     history = get_user_history(user_id)
     
     try:
