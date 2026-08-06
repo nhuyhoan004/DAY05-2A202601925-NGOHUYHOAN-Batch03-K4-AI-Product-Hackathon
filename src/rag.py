@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict
-from src import retrieval, llm, schedule
+from src import config, retrieval, llm, schedule
 
 def get_answer(question: str, conversation_history: List[Dict] = None) -> str:
     """
@@ -86,7 +86,9 @@ def get_answer(question: str, conversation_history: List[Dict] = None) -> str:
     # Xử lý trường hợp LLM không tìm thấy thông tin
     if "[KHONG_BIET]" in answer or "Câu này hơi ngoài hiểu biết của mình" in answer:
         clean_answer = "Câu này hơi ngoài hiểu biết của mình, để không trả lời sai thì mình tag MOD vào giúp bạn nha!"
-        return clean_answer + " @MOD"
+        # Discord chỉ tạo mention role khi dùng cú pháp <@&ROLE_ID>; chuỗi
+        # "@MOD" đơn thuần chỉ hiển thị như văn bản.
+        return clean_answer + f" <@&{config.MOD_ROLE_ID}>"
         
     # Xử lý trường hợp chỉ là câu chào hỏi/giao tiếp thông thường
     if answer.strip().startswith("[GIAO_TIEP]"):

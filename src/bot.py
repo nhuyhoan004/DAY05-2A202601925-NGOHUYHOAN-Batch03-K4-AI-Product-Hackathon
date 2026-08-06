@@ -9,6 +9,9 @@ from src import config, rag, collector, ingest
 # Bộ nhớ hội thoại: lưu lịch sử tin nhắn gần nhất của từng user
 # Cấu trúc: {user_id: {"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}], "last_time": timestamp}}
 conversation_history = {}
+ROLE_MENTION_ONLY = discord.AllowedMentions(
+    everyone=False, users=False, roles=True, replied_user=False
+)
 HISTORY_MAX_MESSAGES = 10  # Tối đa 5 cặp (user + bot) = 10 messages
 HISTORY_EXPIRE_SECONDS = 600  # Xóa lịch sử sau 10 phút không hoạt động
 
@@ -147,7 +150,7 @@ async def on_message(message: discord.Message):
                 save_to_history(user_id, "user", question)
                 save_to_history(user_id, "assistant", answer)
                 
-                await message.reply(answer)
+                await message.reply(answer, allowed_mentions=ROLE_MENTION_ONLY)
             except Exception as e:
                 print(f"Lỗi khi xử lý câu hỏi (tag): {e}")
                 await message.reply("Đã xảy ra lỗi trong quá trình tạo câu trả lời.")
@@ -187,7 +190,7 @@ async def ask(interaction: discord.Interaction, question: str):
         save_to_history(user_id, "user", question)
         save_to_history(user_id, "assistant", answer)
             
-        await interaction.followup.send(answer)
+        await interaction.followup.send(answer, allowed_mentions=ROLE_MENTION_ONLY)
     except Exception as e:
         print(f"Lỗi khi xử lý câu hỏi: {e}")
         await interaction.followup.send("Đã xảy ra lỗi trong quá trình tạo câu trả lời.")

@@ -6,6 +6,8 @@ load_dotenv()
 # Cấu hình Discord
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
+# Role nhận câu hỏi cần MOD hỗ trợ. Có thể override bằng MOD_ROLE_ID trong .env.
+MOD_ROLE_ID = os.getenv("MOD_ROLE_ID", "1532584932386537583")
 
 # Cấu hình OpenAI / LLM
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
