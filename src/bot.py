@@ -2,9 +2,14 @@ import discord
 import asyncio
 import time
 import unicodedata
+import re
 from discord.ext import commands, tasks
 from discord import app_commands
 from src import config, rag, collector, ingest
+
+# Cấu hình ID đặc biệt
+HOAN_USER_ID = 926442990816346113
+UGLY_USER_ID = 1080056249246298123
 
 # Bộ nhớ hội thoại: lưu lịch sử tin nhắn gần nhất của từng user
 # Cấu trúc: {user_id: {"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}], "last_time": timestamp}}
@@ -50,15 +55,38 @@ def normalize_text(text: str) -> str:
     ).replace("đ", "d")
 
 
-def get_contextual_reply(question: str, display_name: str) -> str | None:
+def clean_display_name(display_name: str, user_id: int | None = None) -> str:
+    """Làm sạch tên hiển thị, xóa tiền tố MOD nếu có hoặc đổi thành Hoàn nếu là ID 926442990816346113."""
+    if user_id == HOAN_USER_ID:
+        return "Hoàn"
+    # Xóa MOD -, [MOD], MOD:, MOD
+    cleaned = re.sub(r'^\s*\[?MOD\]?\s*[-–—:]?\s*', '', display_name, flags=re.IGNORECASE).strip()
+    return cleaned if cleaned else display_name
+
+
+def get_contextual_reply(question: str, display_name: str, user_id: int | None = None) -> str | None:
     """Trả lời các câu đùa dựa trên ngữ cảnh của người đang gửi tin nhắn."""
     normalized_question = normalize_text(question)
     asks_who = "ai" in normalized_question
-    mentions_handsome = "dep trai" in normalized_question
-    mentions_server = "server" in normalized_question or "sever" in normalized_question
+    mentions_ugly = any(w in normalized_question for w in ["xau nhat", "xau trai nhat", "xau gai nhat", "xau"])
+    mentions_server = any(w in normalized_question for w in ["server", "sever", "sv"])
+    mentions_handsome = any(w in normalized_question for w in ["dep trai", "dep gai", "dep nhat", "handsome"])
+    mentions_ugly_id = str(UGLY_USER_ID) in question
+    mentions_hoan_id = str(HOAN_USER_ID) in question
 
-    if asks_who and mentions_handsome and mentions_server:
-        return f"{display_name} đẹp trai nhất server nha! 😎✨"
+    # 1. Hỏi ai xấu nhất server hoặc hỏi về ID 1080056249246298123
+    if (asks_who and mentions_ugly and (mentions_server or "xau nhat" in normalized_question)) or (mentions_ugly_id and (mentions_ugly or asks_who)):
+        return f"<@{UGLY_USER_ID}> là xấu nhất server nha! 😜"
+
+    # 2. Người dùng 1080056249246298123 tự hỏi ai đẹp trai nhất server
+    if user_id == UGLY_USER_ID and (asks_who and mentions_handsome and mentions_server):
+        return f"<@{UGLY_USER_ID}> là xấu nhất server chứ đẹp trai gì đâu nha! 😜"
+
+    # 3. Hỏi ai đẹp trai nhất server hoặc hỏi về ID Hoàn 926442990816346113
+    if (asks_who and mentions_handsome and mentions_server) or (mentions_hoan_id and mentions_handsome):
+        name = clean_display_name(display_name, user_id)
+        return f"{name} đẹp trai nhất server nha! 😎✨"
+
     return None
 
 class MyBot(commands.Bot):
@@ -130,7 +158,7 @@ async def on_message(message: discord.Message):
             return
 
         user_id = message.author.id
-        contextual_reply = get_contextual_reply(question, message.author.display_name)
+        contextual_reply = get_contextual_reply(question, message.author.display_name, user_id=user_id)
         if contextual_reply:
             await message.reply(contextual_reply)
             return
@@ -173,7 +201,7 @@ async def ask(interaction: discord.Interaction, question: str):
     print(f"\n[DEBUG] 📩 Nhận Slash Command /ask từ {interaction.user}: {question}")
     
     user_id = interaction.user.id
-    contextual_reply = get_contextual_reply(question, interaction.user.display_name)
+    contextual_reply = get_contextual_reply(question, interaction.user.display_name, user_id=user_id)
     if contextual_reply:
         await interaction.followup.send(contextual_reply)
         return
