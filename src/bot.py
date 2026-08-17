@@ -64,7 +64,7 @@ def clean_display_name(display_name: str, user_id: int | None = None) -> str:
     return cleaned if cleaned else display_name
 
 
-def get_contextual_reply(question: str, display_name: str, user_id: int | None = None) -> str | None:
+def get_contextual_reply(question: str, display_name: str = "", user_id: int | None = None) -> str | None:
     """Trả lời các câu đùa dựa trên ngữ cảnh của người đang gửi tin nhắn."""
     normalized_question = normalize_text(question)
     asks_who = "ai" in normalized_question
@@ -84,8 +84,7 @@ def get_contextual_reply(question: str, display_name: str, user_id: int | None =
 
     # 3. Hỏi ai đẹp trai nhất server hoặc hỏi về ID Hoàn 926442990816346113
     if (asks_who and mentions_handsome and mentions_server) or (mentions_hoan_id and mentions_handsome):
-        name = clean_display_name(display_name, user_id)
-        return f"{name} đẹp trai nhất server nha! 😎✨"
+        return f"<@{HOAN_USER_ID}> đẹp trai nhất server nha! 😎✨"
 
     return None
 
